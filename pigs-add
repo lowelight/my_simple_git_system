@@ -1,0 +1,38 @@
+#!/bin/dash
+
+if [ ! -d "./.pig" ]
+then
+    echo "pigs-add: error: pigs repository directory .pig not found"
+    exit 1
+fi
+
+# max="0"
+# if [ -n "$(ls ./.pig/cached/)" ]
+# then
+#     for _ in "./.pig/cached/"*
+#     do  
+#         max=$((max+1))
+#     done
+# fi
+
+
+
+# mkdir "./.pig/cached/${number}"
+for file in "$@"
+do
+    if [ -e "$file" ]
+    then
+        cp "$file" "./.pig/index"
+    elif [ -e "./.pig/index/${file}" ]
+    then
+        rm "./.pig/index/${file}"
+    else
+        echo "pigs-add: error: can not open '${file}'"
+        exit 1
+    fi
+done
+
+# for file in "./.pig/index/"*
+# do
+#     cp "$file" "./.pig/cached/${number}"
+# done

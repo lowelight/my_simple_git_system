@@ -1,0 +1,63 @@
+#!/bin/dash
+
+while getopts "am:" opt
+do
+    case ${opt} in
+    a)
+        rm -rf ./.pig/index/*
+        for file in "./"*
+        do
+            if [ -f "$file" ] && [ "${file#"./pigs-"}" = "$file" ]
+            then
+                cp "$file" "./.pig/index"
+            fi
+        done
+
+        ;;  
+
+    m)
+
+        max="0"
+        if [ -n "$(ls ./.pig/repo/)" ]
+        then
+            for _ in "./.pig/repo/"*
+            do  
+                max=$((max+1))
+            done
+            max=$((max-1))
+            dir1="./.pig/repo/${max}"
+            dir2="./.pig/index"
+            diff=$(diff -r "$dir1" "$dir2")
+            if [ -z "$diff" ]
+            then
+                echo "nothing to commit"
+                exit 1
+            fi
+        fi
+
+        mes="${OPTARG}"
+        number=$(wc -l "./.pig/.log" |cut -d " " -f1)
+        mkdir "./.pig/repo/${number}"
+        if [ -z "$(ls ./.pig/index)" ] 
+        then
+            echo "Committed as commit ${number}"
+            echo "${number} ${mes}" >> "./.pig/.log"
+            exit
+        fi
+
+        for file in "./.pig/index/"*
+        do
+            
+            cp "$file" "./.pig/repo/${number}"
+        done
+        echo "Committed as commit ${number}"
+        echo "${number} ${mes}" >> "./.pig/.log"
+        ;;
+    
+
+
+    *)
+        continue
+        ;;
+    esac
+done

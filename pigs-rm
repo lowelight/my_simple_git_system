@@ -1,0 +1,141 @@
+#!/bin/dash
+force=false
+cached=false
+index=0
+for opt in "$@"
+do
+    if [ "$opt" = "--force" ]
+    then
+        force=true
+        index=$((index+1))
+    elif [ "$opt" = "--cached" ]
+    then
+        cached=true
+        index=$((index+1))
+    else
+        break
+    fi
+done
+s_index=1
+for file in "$@"
+do
+    if [ "$s_index" -le "$index" ]
+    then
+        s_index=$((s_index+1))   
+        continue
+    else
+        if [ "$force" = true ] && [ "$cached" = true ]
+        then
+            if [ ! -e "./.pig/index/${file}" ]
+            then
+                echo "pigs-rm: error: '$file' is not in the pigs repository"
+                exit 1
+            fi
+            rm "./.pig/index/${file}"
+        elif [ "$force" = true ] && [ "$cached" = false ]
+        then
+            if [ ! -e "./.pig/index/${file}" ]
+            then
+                echo "pigs-rm: error: '$file' is not in the pigs repository"
+                exit 1
+            fi
+            rm "./.pig/index/${file}"
+            if [ -e "./${file}" ]
+            then
+                rm "${file}"
+            fi
+        elif [ "$force" = false ] && [ "$cached" = true ]
+        then
+            max="0"
+            if [ -n "$(ls ./.pig/repo/)" ]
+            then
+                for _ in "./.pig/repo/"*
+                do  
+                    max=$((max+1))
+                done
+            fi
+            max=$((max-1))
+            if [ ! -e "./.pig/index/${file}" ]
+            then
+                echo "pigs-rm: error: '$file' is not in the pigs repository"
+                exit 1
+            fi
+
+
+            if [ ! -e "./${file}" ]
+            then
+                rm "./.pig/index/${file}"
+            fi
+
+
+            if  diff "./.pig/index/${file}" "./${file}" >/dev/null ||  diff "./.pig/index/${file}" "./.pig/repo/${max}/${file}" >/dev/null
+            then
+                rm "./.pig/index/${file}"
+                
+            else
+                echo "pigs-rm: error: '$file' in index is different to both the working file and the repository"
+                exit 1
+            fi
+            
+        
+        
+        elif [ "$force" = false ] && [ "$cached" = false ]
+        then
+            max="0"
+            if [ -n "$(ls ./.pig/repo/)" ]
+            then
+                for _ in "./.pig/repo/"*
+                do  
+                    max=$((max+1))
+                done
+            fi
+            max=$((max-1))
+            cur_file="./${file}"
+            index_file="./.pig/index/${file}"
+            repository_file="./.pig/repo/${max}/${file}"
+
+
+            if [ ! -e "${index_file}" ]
+            then
+                echo "pigs-rm: error: '$file' is not in the pigs repository"
+                exit 1
+            fi
+
+            if [ ! -e "${repository_file}" ]
+            then
+                echo "pigs-rm: error: '$file' has staged changes in the index"
+                exit 1
+                
+            fi
+        
+
+            if [ ! -e "${cur_file}" ]
+            then
+                rm "${index_file}"
+            fi
+
+
+
+            if ! diff "$index_file" "$repository_file" >/dev/null
+            then
+                if ! diff "$index_file" "$cur_file" >/dev/null
+                then
+                    echo "pigs-rm: error: '$file' in index is different to both the working file and the repository"
+                    exit 1
+                else
+                    echo "pigs-rm: error: '$file' has staged changes in the index"
+                    exit 1
+                fi
+            fi
+
+            if ! diff "$cur_file" "$repository_file" >/dev/null
+            then
+                echo "pigs-rm: error: '$file' in the repository is different to the working file"
+                exit 1
+            fi
+
+            rm "$cur_file"
+            rm "$index_file"
+        fi 
+    fi
+done

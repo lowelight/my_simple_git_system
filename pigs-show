@@ -1,0 +1,34 @@
+#!/bin/dash
+
+
+parameter=$1
+num=$(echo "$parameter"|cut -d":" -f1 )
+file=$(echo "$parameter"|cut -d":" -f2 )
+
+
+max="0"
+    for _ in "./.pig/repo/"*
+    do  
+        max=$((max+1))
+    done
+    max=$((max-1))
+
+if [ -z "$num" ]
+then
+    if [ -f "./.pig/index/${file}" ]
+    then
+        cat "./.pig/index/${file}"
+    else
+        echo "pigs-show: error: '${file}' not found in index"
+    fi
+else
+    if [ "$num" -gt "$max" ]
+    then
+        echo "pigs-show: error: unknown commit '${num}'"
+    elif [ ! -e "./.pig/repo/${num}/${file}" ]
+    then
+        echo "pigs-show: error: '${file}' not found in commit ${num}"
+    else
+        cat "./.pig/repo/${num}/${file}"
+    fi
+fi

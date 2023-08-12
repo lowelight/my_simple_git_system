@@ -1,0 +1,69 @@
+#!/bin/dash
+
+
+max="0"
+if [ -n "$(ls ./.pig/repo/)" ]
+then
+    for _ in "./.pig/repo/"*
+    do  
+        max=$((max+1))
+    done
+fi
+max=$((max-1))
+cur_dir="./"
+index_dir="./.pig/index"
+repo_dir="./.pig/repo/${max}"
+
+files=$(find "$cur_dir" "$index_dir" "$repo_dir" -type f -not -name '.*' -exec basename {} \; | sort | uniq)
+
+for file in $files
+do
+    if [ -e "${repo_dir}/${file}" ] && [ ! -e "${cur_dir}/${file}" ] && [ ! -e "${index_dir}/${file}" ]
+    then
+        echo "${file} - file deleted, deleted from index" 
+
+    elif [ -e "${repo_dir}/${file}" ] && [ ! -e "${cur_dir}/${file}" ] && [ -e "${index_dir}/${file}" ]
+    then
+        echo "${file} - file deleted" 
+    
+    elif [ -e "${repo_dir}/${file}" ] && [ -e "${cur_dir}/${file}" ] && [ ! -e "${index_dir}/${file}" ]
+    then
+        echo "${file} - deleted from index"
+    
+    elif [ ! -e "${repo_dir}/${file}" ] && [ -e "${cur_dir}/${file}" ] && [ ! -e "${index_dir}/${file}" ]
+    then
+        echo "${file} - untracked"
+    
+    elif [ ! -e "${repo_dir}/${file}" ] && [ -e "${cur_dir}/${file}" ] && [ -e "${index_dir}/${file}" ]
+    then
+        if diff "${cur_dir}/${file}" "${index_dir}/${file}" >/dev/null
+        then
+            echo "${file} - added to index"
+        else
+            echo "${file} - added to index, file changed"
+        fi
+
+    elif [ ! -e "${repo_dir}/${file}" ] && [ ! -e "${cur_dir}/${file}" ] && [ -e "${index_dir}/${file}" ]
+    then
+        echo "${file} - added to index, file deleted"
+
+    elif [ -e "${repo_dir}/${file}" ] && [ -e "${cur_dir}/${file}" ] && [ -e "${index_dir}/${file}" ]
+    then
+        if ! diff "${cur_dir}/${file}" "${index_dir}/${file}" >/dev/null && ! diff "${repo_dir}/${file}" "${index_dir}/${file}" >/dev/null
+        then
+            echo "${file} - file changed, different changes staged for commit"
+        elif ! diff "${cur_dir}/${file}" "${index_dir}/${file}" >/dev/null && diff "${repo_dir}/${file}" "${index_dir}/${file}" >/dev/null
+        then
+            echo "${file} - file changed, changes not staged for commit"
+        elif diff "${cur_dir}/${file}" "${index_dir}/${file}" >/dev/null && ! diff "${repo_dir}/${file}" "${index_dir}/${file}" >/dev/null
+        then
+            echo "${file} - file changed, changes staged for commit"
+        elif diff "${cur_dir}/${file}" "${index_dir}/${file}" >/dev/null && diff "${repo_dir}/${file}" "${index_dir}/${file}" >/dev/null
+        then
+            echo "${file} - same as repo"
+        fi
+    fi
+done
+
+
+
